@@ -1,0 +1,9 @@
+Django>=6.0.2
+djangorestframework
+django-filter
+django-cors-headers
+python-dotenv
+openai
+requests
+psycopg2-binary
+gunicorn

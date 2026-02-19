@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=ticket_db
+      - POSTGRES_USER=ticket_user
+      - POSTGRES_PASSWORD=ticket_pass
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ticket_user -d ticket_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./BACKEND
+      dockerfile: Dockerfile
+    volumes:
+      - ./BACKEND:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE=postgres
+      - SQL_ENGINE=django.db.backends.postgresql
+      - SQL_DATABASE=ticket_db
+      - SQL_USER=ticket_user
+      - SQL_PASSWORD=ticket_pass
+      - SQL_HOST=db
+      - SQL_PORT=5432
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DEBUG=1
+      - SECRET_KEY=django-insecure-dev-key
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./CLIENT
+      dockerfile: Dockerfile
+    volumes:
+      - ./CLIENT:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
